@@ -16,12 +16,13 @@
 ############################################################################
 
 
-script_name=$(basename "${0}")
+script_name=$(basename "${0}") # ${0}: Shell本身的文件名
 script_dir=$(realpath $(dirname "${0}"))
-swarm_bin_dir=$(realpath "${script_dir}/../../../swarm-learning/bin")
-examples_dir=$(realpath "${script_dir}/../..")
+# 使用已经定义的变量${script_name}
+swarm_bin_dir=$(realpath "${script_dir}/../../../swarm-learning/bin") # 找到swarm的bin目录
+examples_dir=$(realpath "${script_dir}/../..") # 找到example目录
 
-source "${swarm_bin_dir}/common"
+source "${swarm_bin_dir}/common" # 找到common目录
 
 # Prefix for workspace directory
 WS_DIR_PREFIX="ws-"
@@ -29,6 +30,7 @@ WS_DIR_PREFIX="ws-"
 # Help function
 help()
 {
+   # bash init-workspace -e mnist-pytorch -i 127.0.0.1 -d .
    echo ""
    echo "Usage: $script_name -e EXAMPLE-NAME [-i LICENSE-SERVER-IP] [-d PARENT-DIR]"
    echo -e "\t-e Name of the quick start example to run e.g. mnist-keras"
@@ -39,10 +41,11 @@ help()
 }
 
 # Process command options
+#
 while getopts "e:i:d:" opt
 do
    case "$opt" in
-      e ) example="$OPTARG" ;;
+      e ) example="$OPTARG" ;; # 选项e代表example
       n ) nodes="$OPTARG" ;; # nodes variable is not exposed to user
       i ) apls_ip="$OPTARG" ;;
       d ) parent_dir="$OPTARG" ;;
@@ -51,7 +54,8 @@ do
 done
 
 # Checks
-if [ -z "$example" ] 
+# -z 判断 变量的值，是否为空； zero = 0
+if [ -z "$example" ]
 then
    echo "Some or all of the parameters are empty";
    help
@@ -63,22 +67,25 @@ then
 fi
 [ -z "$nodes" ] && nodes=2
 [ -z "$parent_dir" ] && parent_dir="."
+# hostname -I: 显示主机的所有地址
+# awk '{print $1}': 取第一个
 [ -z "$apls_ip" ] && apls_ip=`hostname -I | awk '{print $1}'`
 
 # Finalize names
 parent_dir=${parent_dir%/}
-network_name="$example-net"
-ws_dir="$parent_dir/$WS_DIR_PREFIX$example"
+network_name="$example-net" # 网络名称
+ws_dir="$parent_dir/$WS_DIR_PREFIX$example" # 命名空间创建地址
 
 # Print
 echo "Parameters -"
 echo "$example" " $nodes" " $apls_ip" " $parent_dir" " $examples_dir"
 
 # Checks
-[ ! -d "$examples_dir/$example" ] && echo "Example $example does not exist." && exit 1
-[ ! -d "$parent_dir" ] && echo "Parent directory $parent_dir for workspace does not exist." && exit 1
+[ ! -d "$examples_dir/$example" ] && echo "Example $example does not exist." && exit 1 # 检查example是否存在
+[ ! -d "$parent_dir" ] && echo "Parent directory $parent_dir for workspace does not exist." && exit 1 # 检查保存路径是否存在
 
 # Create workspace
+# 将数据和模型分到每个节点
 mkdir "$ws_dir"
 for index in $(seq 1 $nodes); do
    node_dir="$ws_dir/node$index"
@@ -91,7 +98,9 @@ echo "Data and model files are generated for each node inside the workspace $ws_
 
 # Create network bridge
 echo "Creating docker network bridge $network_name."
+# 创建bridge网络
 ${sudo} docker network create -d bridge $network_name
+# ${?}: 显示上一个执行的命令（或程序）的返回值，这个值通常在0~255之间，0表示一切正常
 ret_val=${?}
 [ $ret_val -ne 0 ] && echo "Failed to create docker network bridge." && exit 1
 
